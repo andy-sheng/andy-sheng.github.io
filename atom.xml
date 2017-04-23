@@ -1,0 +1,317 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>Andy&#39;s Blog</title>
+  
+  <link href="/atom.xml" rel="self"/>
+  
+  <link href="http://andysheng.cn/"/>
+  <updated>2017-04-23T16:48:04.000Z</updated>
+  <id>http://andysheng.cn/</id>
+  
+  <author>
+    <name>Andy Sheng</name>
+    
+  </author>
+  
+  <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>gcd</title>
+    <link href="http://andysheng.cn/2017/02/19/2017-2-19-gcd/"/>
+    <id>http://andysheng.cn/2017/02/19/2017-2-19-gcd/</id>
+    <published>2017-02-19T09:35:08.000Z</published>
+    <updated>2017-04-23T16:48:04.000Z</updated>
+    
+    <content type="html"><![CDATA[<h2 id="获取队列"><a href="#获取队列" class="headerlink" title="获取队列"></a>获取队列</h2><p>支持两种队列，一种是串行队列，系统的main队列就是一个串行队列，所有的UI操作都在这个队列当中；另一种是并发队列，队列中的任务按照添加顺序运行，运行结束的时间不确定。</p>
+<h3 id="1-获取主队列"><a href="#1-获取主队列" class="headerlink" title="1.获取主队列"></a>1.获取主队列</h3><p>所有的UI操作都必须放到主队列中。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">dispatch_queue_t queue = dispatch_get_main_queue();</div></pre></td></tr></table></figure></p>
+<h3 id="2-获取全局队列"><a href="#2-获取全局队列" class="headerlink" title="2.获取全局队列"></a>2.获取全局队列</h3><p>全局队列有四种优先级<code>DISPATCH_QUEUE_PRIORITY_HIGH</code>,<code>DISPATCH_QUEUE_PRIORITY_LOW</code>,<code>DISPATCH_QUEUE_PRIORITY_DEFAULT</code>,<code>DISPATCH_QUEUE_PRIORITY_BACKGROUND</code>。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">dispatch_queue_t queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0);</div></pre></td></tr></table></figure>
+<h3 id="3-创建自定义队列"><a href="#3-创建自定义队列" class="headerlink" title="3.创建自定义队列"></a>3.创建自定义队列</h3><p>第一个参数时队列的名字，第二个参数是队列的类型。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">dispatch_queue_t queue = dispath_queue_create(&quot;queue&quot;, DISPATCH_QUEUE_CONCURRENT);</div></pre></td></tr></table></figure>
+<h2 id="运行任务"><a href="#运行任务" class="headerlink" title="运行任务"></a>运行任务</h2><h3 id="1-运行同步任务"><a href="#1-运行同步任务" class="headerlink" title="1.运行同步任务"></a>1.运行同步任务</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">dispatch_sync(queue, ^&#123;  </div><div class="line">	code;  </div><div class="line">&#125;);</div></pre></td></tr></table></figure>
+<p>运行同步任务要特别注意死锁的情况，下面这个情况已经死锁。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">dispatch_sync(queue, ^&#123;  </div><div class="line">	dispatch_sync(queue, ^&#123;  </div><div class="line">		code;  </div><div class="line">	&#125;);</div><div class="line">&#125;);</div></pre></td></tr></table></figure>
+<h3 id="2-运行异步任务"><a href="#2-运行异步任务" class="headerlink" title="2.运行异步任务"></a>2.运行异步任务</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">dispatch_async(queue, ^&#123;  </div><div class="line">	code;  </div><div class="line">&#125;);</div></pre></td></tr></table></figure>
+<h3 id="3-运行延时任务"><a href="#3-运行延时任务" class="headerlink" title="3.运行延时任务"></a>3.运行延时任务</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">double delayInSeconds = 1.0;  </div><div class="line">dispatch_time_t time = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delayInSeconds * NSEC_PER_SEC));   </div><div class="line">dispatch_after(time, queue, ^(void)&#123;  </div><div class="line">       code;  </div><div class="line"> &#125;);</div></pre></td></tr></table></figure>
+<h3 id="4-运行不与队列中其他任务并行地任务"><a href="#4-运行不与队列中其他任务并行地任务" class="headerlink" title="4.运行不与队列中其他任务并行地任务"></a>4.运行不与队列中其他任务并行地任务</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">dispatch_barrier_async(queue, ^&#123;  </div><div class="line">	code;  </div><div class="line">&#125;);</div></pre></td></tr></table></figure>
+<h3 id="5-运行只运行一次的任务"><a href="#5-运行只运行一次的任务" class="headerlink" title="5.运行只运行一次的任务"></a>5.运行只运行一次的任务</h3><p>常用来创建单例。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">static dispatch_once_t onceToken;  </div><div class="line">dispatch_once(&amp;onceToken, ^&#123;  </div><div class="line">	code;  </div><div class="line">&#125;);</div></pre></td></tr></table></figure>
+<h2 id="监控任务完成"><a href="#监控任务完成" class="headerlink" title="监控任务完成"></a>监控任务完成</h2><p>利用Dispatch Groups对队列中的任务进行监控。</p>
+<h3 id="1-创建组"><a href="#1-创建组" class="headerlink" title="1.创建组"></a>1.创建组</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">dispatch_group_t group = dispatch_group_create();</div></pre></td></tr></table></figure>
+<h3 id="2-通知group任务开始和结束"><a href="#2-通知group任务开始和结束" class="headerlink" title="2.通知group任务开始和结束"></a>2.通知group任务开始和结束</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">dispatch_group_enter(group);  </div><div class="line">do some work here;  </div><div class="line">dispatch_group_leave(group);</div></pre></td></tr></table></figure>
+<h3 id="3-监控组内的任务是否都完成"><a href="#3-监控组内的任务是否都完成" class="headerlink" title="3.监控组内的任务是否都完成"></a>3.监控组内的任务是否都完成</h3><p><code>dispatch_group_wait</code>会造成当前线程阻塞。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">dispatch_group_wait(group, DISPATCH_TIME_FOREVER);</div></pre></td></tr></table></figure>
+<p><code>dispatch_group_notify</code>不会阻塞当前线程</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">dispatch_group_notify(group, dispatch_get_main_queue(), ^&#123;  </div><div class="line">    code;  </div><div class="line">&#125;);</div></pre></td></tr></table></figure>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h2 id=&quot;获取队列&quot;&gt;&lt;a href=&quot;#获取队列&quot; class=&quot;headerlink&quot; title=&quot;获取队列&quot;&gt;&lt;/a&gt;获取队列&lt;/h2&gt;&lt;p&gt;支持两种队列，一种是串行队列，系统的main队列就是一个串行队列，所有的UI操作都在这个队列当中；另一种是并发队列，队列中的
+    
+    </summary>
+    
+      <category term="note" scheme="http://andysheng.cn/categories/note/"/>
+    
+    
+      <category term="gcd" scheme="http://andysheng.cn/tags/gcd/"/>
+    
+      <category term="ios" scheme="http://andysheng.cn/tags/ios/"/>
+    
+      <category term="objective-c" scheme="http://andysheng.cn/tags/objective-c/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Java reflect</title>
+    <link href="http://andysheng.cn/2017/01/05/2017-1-5-java-reflect/"/>
+    <id>http://andysheng.cn/2017/01/05/2017-1-5-java-reflect/</id>
+    <published>2017-01-05T15:11:50.000Z</published>
+    <updated>2017-02-25T07:08:34.000Z</updated>
+    
+    <content type="html"><![CDATA[<h2 id="Java-反射"><a href="#Java-反射" class="headerlink" title="Java 反射"></a>Java 反射</h2><h3 id="实例化类"><a href="#实例化类" class="headerlink" title="实例化类"></a>实例化类</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">Object user = Class.forName(&quot;cn.andysheng.models.User&quot;).newInstance();</div></pre></td></tr></table></figure>
+<h3 id="属性注入"><a href="#属性注入" class="headerlink" title="属性注入"></a>属性注入</h3><p>获取属性的setter方法,通过invoke函数调用setter方法</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">Method setterMethod = obj.getClass().getMethod(&quot;setName&quot;, paramClass);   </div><div class="line">setterMethod.invoke(obj, val);</div></pre></td></tr></table></figure>
+<h3 id="整合"><a href="#整合" class="headerlink" title="整合"></a>整合</h3><p>使用Java的Annotation和reflect实现一个简单的模型层。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">@Target(ElementType.TYPE)  </div><div class="line">@Retention(RetentionPolicy.RUNTIME)  </div><div class="line">@Inherited  </div><div class="line">public @interface Table &#123;  </div><div class="line">    String value();  </div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">@Target(ElementType.FIELD)  </div><div class="line">@Retention(RetentionPolicy.RUNTIME)  </div><div class="line">@Inherited  </div><div class="line">public @interface Column &#123;  </div><div class="line">    String value();  </div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div></pre></td><td class="code"><pre><div class="line">@Table(&quot;user&quot;)  </div><div class="line">public class User extends Model &#123;  </div><div class="line">  </div><div class="line">    @Column(&quot;id&quot;)  </div><div class="line">    Integer id;  </div><div class="line">  </div><div class="line">    @Column(&quot;name&quot;)  </div><div class="line">    String name;  </div><div class="line">  </div><div class="line">    public void setId(Integer id) &#123;  </div><div class="line">        this.id = id;  </div><div class="line">    &#125;  </div><div class="line">  </div><div class="line">    public Integer getId() &#123;  </div><div class="line">        return id;  </div><div class="line">    &#125;  </div><div class="line">  </div><div class="line">    public void setName(String name) &#123;  </div><div class="line">        this.name = name;  </div><div class="line">    &#125;  </div><div class="line">  </div><div class="line">    public String getName() &#123;  </div><div class="line">        return name;  </div><div class="line">    &#125;  </div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div></pre></td><td class="code"><pre><div class="line">public class Model &#123;  </div><div class="line">  </div><div class="line">    public String query()  </div><div class="line">    &#123;  </div><div class="line">        StringBuilder query = new StringBuilder(&quot;select * from &quot;);  </div><div class="line">  </div><div class="line">        Table tableAnno = (Table)this.getClass().getAnnotation(Table.class);  </div><div class="line">        query.append(tableAnno.value());  </div><div class="line">  </div><div class="line">        query.append(&quot; where 1=1&quot;);  </div><div class="line">  </div><div class="line"></div><div class="line">        for (Field field: this.getClass().getDeclaredFields()) &#123;  </div><div class="line">            Column colAnno = field.getAnnotation(Column.class);  </div><div class="line">            if (colAnno != null) &#123;  </div><div class="line">                Method getMethod = null;  </div><div class="line">                try &#123;  </div><div class="line">                    getMethod = this.getClass()  </div><div class="line">                            .getMethod(&quot;get&quot; +field.getName().substring(0,1).toUpperCase() + field.getName().substring(1));</div><div class="line">                    query.append(&quot; and &quot;+colAnno.value() + &quot;=&quot;+getMethod.invoke(this));</div><div class="line">                &#125; catch (NoSuchMethodException|IllegalAccessException|InvocationTargetException e) &#123;  </div><div class="line">                    e.printStackTrace();  </div><div class="line">                &#125;  </div><div class="line"></div><div class="line">            &#125;  </div><div class="line">        &#125;  </div><div class="line">        return query.toString();  </div><div class="line">    &#125;  </div><div class="line">&#125;</div></pre></td></tr></table></figure>]]></content>
+    
+    <summary type="html">
+    
+      &lt;h2 id=&quot;Java-反射&quot;&gt;&lt;a href=&quot;#Java-反射&quot; class=&quot;headerlink&quot; title=&quot;Java 反射&quot;&gt;&lt;/a&gt;Java 反射&lt;/h2&gt;&lt;h3 id=&quot;实例化类&quot;&gt;&lt;a href=&quot;#实例化类&quot; class=&quot;headerlink&quot; titl
+    
+    </summary>
+    
+      <category term="note" scheme="http://andysheng.cn/categories/note/"/>
+    
+    
+      <category term="java" scheme="http://andysheng.cn/tags/java/"/>
+    
+      <category term="reflect" scheme="http://andysheng.cn/tags/reflect/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>crontab的使用</title>
+    <link href="http://andysheng.cn/2016/12/01/2016-12-1-crontab/"/>
+    <id>http://andysheng.cn/2016/12/01/2016-12-1-crontab/</id>
+    <published>2016-11-30T16:22:05.000Z</published>
+    <updated>2017-04-23T16:42:24.000Z</updated>
+    
+    <content type="html"><![CDATA[<h2 id="crontab是什么"><a href="#crontab是什么" class="headerlink" title="crontab是什么"></a>crontab是什么</h2><p>  *nix平台中定时执行任务的工具，比方定时备份数据库、重启服务器之类。在大巴WiFi中，采用crontab每隔几分钟执行一个脚本检查一次所有通过微信链接WiFi的用户是否关注了公众号，没关注就踢下WiFi。比较简单地实现了不关注公众号就只给上几分钟网的功能。</p>
+<h2 id="crontab怎么用"><a href="#crontab怎么用" class="headerlink" title="crontab怎么用"></a>crontab怎么用</h2><p>基本用法</p>
+<pre><code>*  *  *  *  * command
+分 时 日 月 周  指令
+</code></pre><p>或者</p>
+<pre><code>*  *  *  *  * user command
+分 时 日 月 周  用户  指令
+</code></pre><p>也可以用<code>A-C/B</code>的形式指定分时日月周，以分为例，是A分钟到C分钟之间，每B分钟执行一次。<code>A-C</code>可以使用<code>*</code>代替，指每B分钟执行一次。</p>
+<p>crontab在运行命令后，会发送一份邮件。如果不想收到邮件或者没有配置邮箱，则可以直接把命令的标准输出重定向到一个空设备，即<code>command &gt; /dev/null &amp;</code>。</p>
+<h2 id="使用crontab中的坑，可能导致任务无法执行"><a href="#使用crontab中的坑，可能导致任务无法执行" class="headerlink" title="使用crontab中的坑，可能导致任务无法执行"></a>使用crontab中的坑，可能导致任务无法执行</h2><p>1.尽量使用绝对路径。crontab执行命令的环境变量和终端中是不一样的。crontab的PATH变量在<code>/etc/crontab</code>文件的头部定义，所以要不就把需要的路径加到crontab的PATH中去，要不索性全部使用绝对路径。</p>
+<p>在项目中碰到了<code>/rg_sbin</code>不在PATH中， 和PATH没有python的问题。花了很多时间才发现了问题。😭<br><img src="http://ww2.sinaimg.cn/large/65e4f1e6jw1fahkggjqa0j21kw1677ev.jpg" alt=""></p>
+<p>2.系统任务和用户任务的区别。千万记住，<code>/etc/crontab</code>中配置的是系统的定时任务，这里是需要制定user的，但是在<code>crontab -e</code>中编辑的用户任务，这里是没有user字段的。要是在<code>crontab -e</code>中带上了user，所有命令都会变成类似root command，导致任务都无法执行。</p>
+<p>项目中碰到了一個神奇的问题，锐捷的设备会自动把/etc/crontab中的指令复制到root用户的用户crontab中，而且是带了user的，全部命令都是<code>root command</code>的形式，应该是不能执行的，真是诡异。</p>
+<p>3.crontab任务实在无法运行时，不妨开启日志，查看crontab日志。crontab的日志需要在<code>/etc/rsyslog.d/50-default.conf</code>中开启，然后重启rsyslog和cron服务。<br><img src="http://ww1.sinaimg.cn/large/65e4f1e6jw1fahkp0oeiej21kw167gw8.jpg" alt=""></p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h2 id=&quot;crontab是什么&quot;&gt;&lt;a href=&quot;#crontab是什么&quot; class=&quot;headerlink&quot; title=&quot;crontab是什么&quot;&gt;&lt;/a&gt;crontab是什么&lt;/h2&gt;&lt;p&gt;  *nix平台中定时执行任务的工具，比方定时备份数据库、重启服务器之类。在
+    
+    </summary>
+    
+      <category term="note" scheme="http://andysheng.cn/categories/note/"/>
+    
+    
+      <category term="linux" scheme="http://andysheng.cn/tags/linux/"/>
+    
+      <category term="crontab" scheme="http://andysheng.cn/tags/crontab/"/>
+    
+      <category term="cron" scheme="http://andysheng.cn/tags/cron/"/>
+    
+      <category term="锐捷" scheme="http://andysheng.cn/tags/%E9%94%90%E6%8D%B7/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>xcode快捷键</title>
+    <link href="http://andysheng.cn/2015/10/14/2015-10-14-xcode/"/>
+    <id>http://andysheng.cn/2015/10/14/2015-10-14-xcode/</id>
+    <published>2015-10-14T05:21:41.000Z</published>
+    <updated>2016-11-30T16:22:27.000Z</updated>
+    
+    <content type="html"><![CDATA[<ul>
+<li><p>编辑</p>
+<ul>
+<li>移动光标到行首 Ctrl + A</li>
+<li>移动光标到行尾 Ctrl + E</li>
+</ul>
+</li>
+<li><p>工程导航栏 Command + 1</p>
+</li>
+<li><p>显示/隐藏导航器面板(界面左边) Command + 0</p>
+</li>
+<li><p>显示/隐藏使用工具面板（界面右边） Command + Option + 0</p>
+</li>
+<li><p>在辅助编辑器中打开文件 在工程导航器中按住Option并点击文件</p>
+</li>
+<li><p>搜索 Command + Shift + F</p>
+</li>
+<li><p>文件跳转栏</p>
+</li>
+<li><p>快速打开 Command + Shift + O （类似sublime中的 command + p）</p>
+</li>
+<li><p>在相关的 .h 文件和 .m文件中快速切换 Command + Shift + Up Arrow</p>
+</li>
+</ul>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;ul&gt;
+&lt;li&gt;&lt;p&gt;编辑&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;移动光标到行首 Ctrl + A&lt;/li&gt;
+&lt;li&gt;移动光标到行尾 Ctrl + E&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;工程导航栏 Command + 1&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;显示/隐藏导航器面板
+    
+    </summary>
+    
+      <category term="note" scheme="http://andysheng.cn/categories/note/"/>
+    
+    
+      <category term="xcode" scheme="http://andysheng.cn/tags/xcode/"/>
+    
+      <category term="iOS" scheme="http://andysheng.cn/tags/iOS/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Vim笔记</title>
+    <link href="http://andysheng.cn/2015/07/26/2015-5-30-vim/"/>
+    <id>http://andysheng.cn/2015/07/26/2015-5-30-vim/</id>
+    <published>2015-07-26T14:53:36.000Z</published>
+    <updated>2015-07-26T15:14:07.000Z</updated>
+    
+    <content type="html"><![CDATA[<h2 id="基本的操作"><a href="#基本的操作" class="headerlink" title="基本的操作"></a>基本的操作</h2><h3 id="光标移动"><a href="#光标移动" class="headerlink" title="光标移动"></a>光标移动</h3><ul>
+<li>下：<code>j</code></li>
+<li>上：<code>k</code></li>
+<li>右：<code>l</code></li>
+<li>左：<code>h</code></li>
+</ul>
+<h3 id="选中、复制粘帖"><a href="#选中、复制粘帖" class="headerlink" title="选中、复制粘帖"></a>选中、复制粘帖</h3><ul>
+<li>选中：<code>v</code></li>
+<li>复制：<code>y</code></li>
+<li>粘帖：<code>p</code> </li>
+</ul>
+<h2 id="安装插件"><a href="#安装插件" class="headerlink" title="安装插件"></a>安装插件</h2>]]></content>
+    
+    <summary type="html">
+    
+      &lt;h2 id=&quot;基本的操作&quot;&gt;&lt;a href=&quot;#基本的操作&quot; class=&quot;headerlink&quot; title=&quot;基本的操作&quot;&gt;&lt;/a&gt;基本的操作&lt;/h2&gt;&lt;h3 id=&quot;光标移动&quot;&gt;&lt;a href=&quot;#光标移动&quot; class=&quot;headerlink&quot; title=&quot;光标移动&quot;
+    
+    </summary>
+    
+      <category term="note" scheme="http://andysheng.cn/categories/note/"/>
+    
+    
+      <category term="vim" scheme="http://andysheng.cn/tags/vim/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>pymongo</title>
+    <link href="http://andysheng.cn/2015/07/26/2015-5-20-pymongo/"/>
+    <id>http://andysheng.cn/2015/07/26/2015-5-20-pymongo/</id>
+    <published>2015-07-26T14:53:15.000Z</published>
+    <updated>2015-11-30T08:43:54.000Z</updated>
+    
+    <content type="html"><![CDATA[<h2 id="链接："><a href="#链接：" class="headerlink" title="链接："></a>链接：</h2><ul>
+<li><p>链接数据库<br>  <code>db = pymongo.Connect(&#39;localhost&#39;, port)</code></p>
+</li>
+<li><p>选择数据库<br>  <code>db = db.test</code></p>
+</li>
+<li><p>获取聚集名<br>  <code>db.collection_names()</code></p>
+</li>
+</ul>
+<h2 id="CURD操作"><a href="#CURD操作" class="headerlink" title="CURD操作:"></a>CURD操作:</h2><ul>
+<li><p>插入<br>  <code>db.testData.insert({&#39;name&#39;:&#39;test&#39;})</code></p>
+</li>
+<li><p>查询</p>
+<ul>
+<li><code>python</code> </li>
+<li><code>db.testData.find_one()</code></li>
+<li><code>db.testData.find({&#39;name&#39;:&#39;andy&#39;})</code></li>
+<li><code>sort limit</code></li>
+</ul>
+</li>
+<li><p>修改<br>  <code>db.testData.update({&#39;name&#39;:&#39;andy&#39;}, {&#39;$set&#39;:{&#39;email&#39;:&#39;hehe&#39;}})</code></p>
+</li>
+<li><p>删除<br>  <code>db.testData.remove({&#39;name&#39;:&#39;andy&#39;})</code></p>
+</li>
+</ul>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h2 id=&quot;链接：&quot;&gt;&lt;a href=&quot;#链接：&quot; class=&quot;headerlink&quot; title=&quot;链接：&quot;&gt;&lt;/a&gt;链接：&lt;/h2&gt;&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;链接数据库&lt;br&gt;  &lt;code&gt;db = pymongo.Connect(&amp;#39;localhost&amp;#39;
+    
+    </summary>
+    
+      <category term="note" scheme="http://andysheng.cn/categories/note/"/>
+    
+    
+      <category term="Python" scheme="http://andysheng.cn/tags/Python/"/>
+    
+      <category term="Pymongo" scheme="http://andysheng.cn/tags/Pymongo/"/>
+    
+      <category term="MongoDB" scheme="http://andysheng.cn/tags/MongoDB/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>在Jekyll中使用disqus</title>
+    <link href="http://andysheng.cn/2015/07/26/2015-7-27-disqus/"/>
+    <id>http://andysheng.cn/2015/07/26/2015-7-27-disqus/</id>
+    <published>2015-07-26T14:52:45.000Z</published>
+    <updated>2015-07-26T14:52:45.000Z</updated>
+    
+    <content type="html"><![CDATA[<p>为在博客中使用disqus评论，花掉了我半个下午的时间。</p>
+<p>首先说一下disqus。静态博客只是几个写死了的静态页面，没有后台，所以要再静态博客中加入评论功能的话就必须采用第三方提供的服务。大致看了一下生成的网页源码，其实原理比较简单。disqus会评论功能做成一个简单的页面，然后在博客中采用iframe把disqus提供的评论页面引入就可以了。</p>
+<p>接下来说一下在Jekyll中使用disqus的过程。我采用的是HPSTR主题。</p>
+<p>其实要使用disqus很简单，但是一直没有找到合适的文档导致踩了不少坑。</p>
+<ul>
+<li>先在<a href="https://disqus.com/" target="_blank" rel="external">disqus</a>上注册账号</li>
+<li>然后点击右上角的齿轮图标，选择<em>add disqus to site</em>，在页面中输入点博客的信息</li>
+<li>接着进入setting&gt;Advanced中，将博客的域名填入<em>Trusted Domains</em>当中</li>
+<li>最后在Jekyll的<em>_config.yml</em>中把获得到的<em>disqus_shortname</em>填入即可。这个千万不能填错，我就是填错了这个东西，折腾了好久。</li>
+</ul>
+<p>哦…记得开启评论功能<code>comments:true</code>。然后上传代码就可以测试了。</p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;为在博客中使用disqus评论，花掉了我半个下午的时间。&lt;/p&gt;
+&lt;p&gt;首先说一下disqus。静态博客只是几个写死了的静态页面，没有后台，所以要再静态博客中加入评论功能的话就必须采用第三方提供的服务。大致看了一下生成的网页源码，其实原理比较简单。disqus会评论功能做成
+    
+    </summary>
+    
+      <category term="zaqizaba" scheme="http://andysheng.cn/categories/zaqizaba/"/>
+    
+    
+      <category term="Jekyll" scheme="http://andysheng.cn/tags/Jekyll/"/>
+    
+      <category term="disqus" scheme="http://andysheng.cn/tags/disqus/"/>
+    
+      <category term="blog" scheme="http://andysheng.cn/tags/blog/"/>
+    
+  </entry>
+  
+</feed>

@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next muse use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="assemble,iOS,arm64,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="了解一些汇编知识有助于我们分析 crash，逆向等。下面看一下高级语言中的函数调用，汇编是如何实现的。 看一个最简单的 C 语言的函数调用。 C 代码： 12345int main(int argc, char * argv[]) &amp;#123;    int64_t a = 1;    int64_t b = 2;    test(a);&amp;#125;  对应的汇编： 123456789101112">
+<meta name="keywords" content="assemble,iOS,arm64">
+<meta property="og:type" content="article">
+<meta property="og:title" content="汇编之函数调用">
+<meta property="og:url" content="http://yoursite.com/2019/07/22/2019-7-22-assemble-function/index.html">
+<meta property="og:site_name" content="Andy&#39;s Blog">
+<meta property="og:description" content="了解一些汇编知识有助于我们分析 crash，逆向等。下面看一下高级语言中的函数调用，汇编是如何实现的。 看一个最简单的 C 语言的函数调用。 C 代码： 12345int main(int argc, char * argv[]) &amp;#123;    int64_t a = 1;    int64_t b = 2;    test(a);&amp;#125;  对应的汇编： 123456789101112">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://raw.githubusercontent.com/andy-sheng/image_storage/master/img/ea62bbe9-392e-490d-89db-73e86a4e771e.png">
+<meta property="og:updated_time" content="2019-07-22T17:41:30.504Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="汇编之函数调用">
+<meta name="twitter:description" content="了解一些汇编知识有助于我们分析 crash，逆向等。下面看一下高级语言中的函数调用，汇编是如何实现的。 看一个最简单的 C 语言的函数调用。 C 代码： 12345int main(int argc, char * argv[]) &amp;#123;    int64_t a = 1;    int64_t b = 2;    test(a);&amp;#125;  对应的汇编： 123456789101112">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/andy-sheng/image_storage/master/img/ea62bbe9-392e-490d-89db-73e86a4e771e.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Muse',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2019/07/22/2019-7-22-assemble-function/">
+
+
+
+
+
+  <title>汇编之函数调用 | Andy's Blog</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Andy's Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/07/22/2019-7-22-assemble-function/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Andy">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Andy's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">汇编之函数调用</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-07-22T00:00:00+08:00">
+                2019-07-22
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>了解一些汇编知识有助于我们分析 crash，逆向等。<br>下面看一下高级语言中的函数调用，汇编是如何实现的。</p>
+<p>看一个最简单的 C 语言的函数调用。</p>
+<p>C 代码：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">int main(int argc, char * argv[]) &#123;</span><br><span class="line">    int64_t a = 1;</span><br><span class="line">    int64_t b = 2;</span><br><span class="line">    test(a);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>对应的汇编：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">coobjcBaseExample`main:</span><br><span class="line">    0x102ed7b04 &lt;+0&gt;:  sub    sp, sp, #0x40             ; =0x40 </span><br><span class="line">    0x102ed7b08 &lt;+4&gt;:  stp    x29, x30, [sp, #0x30]</span><br><span class="line">    0x102ed7b0c &lt;+8&gt;:  add    x29, sp, #0x30            ; =0x30 </span><br><span class="line">    0x102ed7b10 &lt;+12&gt;: orr    x8, xzr, #0x2</span><br><span class="line">    0x102ed7b14 &lt;+16&gt;: orr    x9, xzr, #0x1</span><br><span class="line">    0x102ed7b18 &lt;+20&gt;: stur   w0, [x29, #-0x4]</span><br><span class="line">    0x102ed7b1c &lt;+24&gt;: stur   x1, [x29, #-0x10]</span><br><span class="line">    0x102ed7b20 &lt;+28&gt;: str    x9, [sp, #0x18]</span><br><span class="line">    0x102ed7b24 &lt;+32&gt;: str    x8, [sp, #0x10]</span><br><span class="line">-&gt;  0x102ed7b28 &lt;+36&gt;: ldr    x0, [sp, #0x18]</span><br><span class="line">    0x102ed7b2c &lt;+40&gt;: bl     0x102ed7ae0               ; test at main.m:12</span><br><span class="line">    0x102ed7b30 &lt;+44&gt;: mov    w10, #0x0</span><br><span class="line">    0x102ed7b34 &lt;+48&gt;: str    x0, [sp, #0x8]</span><br><span class="line">    0x102ed7b38 &lt;+52&gt;: mov    x0, x10</span><br><span class="line">    0x102ed7b3c &lt;+56&gt;: ldp    x29, x30, [sp, #0x30]</span><br><span class="line">    0x102ed7b40 &lt;+60&gt;: add    sp, sp, #0x40             ; =0x40 </span><br><span class="line">    0x102ed7b44 &lt;+64&gt;: ret</span><br></pre></td></tr></table></figure>
+
+<p>所涉及的寄存器</p>
+<ol>
+<li>fp 寄存器 (frame pointer) 指向栈底</li>
+<li>lr 寄存器 (link register) 保存子程序执行完返回的地址</li>
+<li>sp 寄存器 (stack pointer) 栈顶</li>
+</ol>
+<p>进入 mian 函数</p>
+<ol>
+<li>分配栈空间</li>
+</ol>
+<p><code>0x102ed7b04 &lt;+0&gt;:  sub    sp, sp, #0x40</code></p>
+<p>如图，arm64 架构中，堆在低地址，从低地址向高地址增长。栈在高地址，从高地址向低地址增长，因此栈底在高地址，栈顶在低地址。<br>进入函数需要做的第一步就是开辟栈空间，供函数体内变量使用。这里通过 <code>sub    sp, sp, #0x40</code> 就是栈顶向低地址方向移动 64(0x40) 个字节，开辟了64个字节大小的栈空间。</p>
+<p><img src="https://raw.githubusercontent.com/andy-sheng/image_storage/master/img/ea62bbe9-392e-490d-89db-73e86a4e771e.png" alt></p>
+<ol start="2">
+<li>保存 fp 和 lr (保存现场)</li>
+</ol>
+<p><code>stp    x29, x30, [sp, #0x30]</code></p>
+<p>把 main 函数调用者的 fp 和 main 函数执行完之后需要返回的地址保存 sp + 0x30 - 0x40 这段内存上。arm 64 一般寄存器的宽度是 64 位也就是 8个字节，0x30 - 0x40 有 16 个字节，可以存储两个寄存器的内容。</p>
+<ol start="3">
+<li>移动栈底到 sp + 0x30 位置上</li>
+</ol>
+<p><code>add    x29, sp, #0x30</code></p>
+<p>也就是 main 的栈空间是 64 个字节大小，最底下的16个字节用来保存现场，真实可以用的栈地址是 sp + 0x30 - sp 的这 48 个字节。</p>
+<ol start="4">
+<li>为 test 传入参数</li>
+</ol>
+<p><code>0x102ed7b28 &lt;+36&gt;: ldr    x0, [sp, #0x18]</code></p>
+<p>把 a 的值放入 x0 寄存器。</p>
+<blockquote>
+<p>arm 64 会把前8个参数放入 x0 - x7 寄存器中，8个以外的参数通过栈传递</p>
+</blockquote>
+<ol start="5">
+<li>跳转到 test 函数执行</li>
+</ol>
+<p><code>0x102ed7b2c &lt;+40&gt;: bl     0x102ed7ae0</code></p>
+<ol start="6">
+<li>test 执行完之后 从 X0 获取返回值</li>
+</ol>
+<p><code>0x102ed7b34 &lt;+48&gt;: str    x0, [sp, #0x8]</code></p>
+<ol start="7">
+<li>从栈里恢复 fp 寄存器 lr寄存器，恢复现场</li>
+</ol>
+<p><code>0x102ed7b3c &lt;+56&gt;: ldp    x29, x30, [sp, #0x30]</code></p>
+<ol start="8">
+<li>释放栈空间</li>
+</ol>
+<p><code>0x102ed7b40 &lt;+60&gt;: add    sp, sp, #0x40</code></p>
+<p>sp 加 0x40，释放掉函数开头分配的 64 个字节的栈空间。</p>
+<ol start="9">
+<li>根据 lr 中的值，返回 main 函数调用的地方执行</li>
+</ol>
+<p><code>0x102ed7b44 &lt;+64&gt;: ret</code></p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/assemble/" rel="tag"># assemble</a>
+          
+            <a href="/tags/iOS/" rel="tag"># iOS</a>
+          
+            <a href="/tags/arm64/" rel="tag"># arm64</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/08/12/2017-8-12-retaincycle/" rel="next" title="你以为避免 block 循环引用只要 weakself就好了？">
+                <i class="fa fa-chevron-left"></i> 你以为避免 block 循环引用只要 weakself就好了？
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/07/23/hello-world/" rel="prev" title="Hello World">
+                Hello World <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+
+      <section class="site-overview-wrap sidebar-panel sidebar-panel-active">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">Andy</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">5</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                
+                  <span class="site-state-item-count">12</span>
+                  <span class="site-state-item-name">标签</span>
+                
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Andy</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Muse</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

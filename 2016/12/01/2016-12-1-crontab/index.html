@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next muse use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="linux,crontab,cron,锐捷,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="crontab是什么  *nix平台中定时执行任务的工具，比方定时备份数据库、重启服务器之类。在大巴WiFi中，采用crontab每隔几分钟执行一个脚本检查一次所有通过微信链接WiFi的用户是否关注了公众号，没关注就踢下WiFi。比较简单地实现了不关注公众号就只给上几分钟网的功能。 crontab怎么用基本用法 *  *  *  *  * command 分 时 日 月 周  指令或者 *  *">
+<meta name="keywords" content="linux,crontab,cron,锐捷">
+<meta property="og:type" content="article">
+<meta property="og:title" content="crontab的使用">
+<meta property="og:url" content="http://yoursite.com/2016/12/01/2016-12-1-crontab/index.html">
+<meta property="og:site_name" content="Andy&#39;s Blog">
+<meta property="og:description" content="crontab是什么  *nix平台中定时执行任务的工具，比方定时备份数据库、重启服务器之类。在大巴WiFi中，采用crontab每隔几分钟执行一个脚本检查一次所有通过微信链接WiFi的用户是否关注了公众号，没关注就踢下WiFi。比较简单地实现了不关注公众号就只给上几分钟网的功能。 crontab怎么用基本用法 *  *  *  *  * command 分 时 日 月 周  指令或者 *  *">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://ww2.sinaimg.cn/large/65e4f1e6jw1fahkggjqa0j21kw1677ev.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/65e4f1e6jw1fahkp0oeiej21kw167gw8.jpg">
+<meta property="og:updated_time" content="2019-07-22T17:42:59.266Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="crontab的使用">
+<meta name="twitter:description" content="crontab是什么  *nix平台中定时执行任务的工具，比方定时备份数据库、重启服务器之类。在大巴WiFi中，采用crontab每隔几分钟执行一个脚本检查一次所有通过微信链接WiFi的用户是否关注了公众号，没关注就踢下WiFi。比较简单地实现了不关注公众号就只给上几分钟网的功能。 crontab怎么用基本用法 *  *  *  *  * command 分 时 日 月 周  指令或者 *  *">
+<meta name="twitter:image" content="http://ww2.sinaimg.cn/large/65e4f1e6jw1fahkggjqa0j21kw1677ev.jpg">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Muse',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2016/12/01/2016-12-1-crontab/">
+
+
+
+
+
+  <title>crontab的使用 | Andy's Blog</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Andy's Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/12/01/2016-12-1-crontab/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Andy">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Andy's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">crontab的使用</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2016-12-01T00:00:00+08:00">
+                2016-12-01
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="crontab是什么"><a href="#crontab是什么" class="headerlink" title="crontab是什么"></a>crontab是什么</h2><p>  *nix平台中定时执行任务的工具，比方定时备份数据库、重启服务器之类。在大巴WiFi中，采用crontab每隔几分钟执行一个脚本检查一次所有通过微信链接WiFi的用户是否关注了公众号，没关注就踢下WiFi。比较简单地实现了不关注公众号就只给上几分钟网的功能。</p>
+<h2 id="crontab怎么用"><a href="#crontab怎么用" class="headerlink" title="crontab怎么用"></a>crontab怎么用</h2><p>基本用法</p>
+<pre><code>*  *  *  *  * command
+分 时 日 月 周  指令</code></pre><p>或者</p>
+<pre><code>*  *  *  *  * user command
+分 时 日 月 周  用户  指令</code></pre><p>也可以用<code>A-C/B</code>的形式指定分时日月周，以分为例，是A分钟到C分钟之间，每B分钟执行一次。<code>A-C</code>可以使用<code>*</code>代替，指每B分钟执行一次。</p>
+<p>crontab在运行命令后，会发送一份邮件。如果不想收到邮件或者没有配置邮箱，则可以直接把命令的标准输出重定向到一个空设备，即<code>command &gt; /dev/null &amp;</code>。</p>
+<h2 id="使用crontab中的坑，可能导致任务无法执行"><a href="#使用crontab中的坑，可能导致任务无法执行" class="headerlink" title="使用crontab中的坑，可能导致任务无法执行"></a>使用crontab中的坑，可能导致任务无法执行</h2><p>1.尽量使用绝对路径。crontab执行命令的环境变量和终端中是不一样的。crontab的PATH变量在<code>/etc/crontab</code>文件的头部定义，所以要不就把需要的路径加到crontab的PATH中去，要不索性全部使用绝对路径。</p>
+<p>在项目中碰到了<code>/rg_sbin</code>不在PATH中， 和PATH没有python的问题。花了很多时间才发现了问题。😭<br><img src="http://ww2.sinaimg.cn/large/65e4f1e6jw1fahkggjqa0j21kw1677ev.jpg" alt></p>
+<p>2.系统任务和用户任务的区别。千万记住，<code>/etc/crontab</code>中配置的是系统的定时任务，这里是需要制定user的，但是在<code>crontab -e</code>中编辑的用户任务，这里是没有user字段的。要是在<code>crontab -e</code>中带上了user，所有命令都会变成类似root command，导致任务都无法执行。</p>
+<p>项目中碰到了一個神奇的问题，锐捷的设备会自动把/etc/crontab中的指令复制到root用户的用户crontab中，而且是带了user的，全部命令都是<code>root command</code>的形式，应该是不能执行的，真是诡异。</p>
+<p>3.crontab任务实在无法运行时，不妨开启日志，查看crontab日志。crontab的日志需要在<code>/etc/rsyslog.d/50-default.conf</code>中开启，然后重启rsyslog和cron服务。<br><img src="http://ww1.sinaimg.cn/large/65e4f1e6jw1fahkp0oeiej21kw167gw8.jpg" alt></p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/linux/" rel="tag"># linux</a>
+          
+            <a href="/tags/crontab/" rel="tag"># crontab</a>
+          
+            <a href="/tags/cron/" rel="tag"># cron</a>
+          
+            <a href="/tags/锐捷/" rel="tag"># 锐捷</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2017/02/19/2017-2-19-gcd/" rel="prev" title="gcd">
+                gcd <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">Andy</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">5</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                
+                  <span class="site-state-item-count">12</span>
+                  <span class="site-state-item-name">标签</span>
+                
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#crontab是什么"><span class="nav-number">1.</span> <span class="nav-text">crontab是什么</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#crontab怎么用"><span class="nav-number">2.</span> <span class="nav-text">crontab怎么用</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#使用crontab中的坑，可能导致任务无法执行"><span class="nav-number">3.</span> <span class="nav-text">使用crontab中的坑，可能导致任务无法执行</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Andy</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Muse</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
